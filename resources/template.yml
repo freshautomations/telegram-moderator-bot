@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Telegram Moderator Bot AWS Lambda function
+Resources:
+  LambdaFunction:
+    Properties:
+      FunctionName: tmb
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          ENVIRONMENT: "staging"
+          LAMBDA_SECRET: "abc"
+          TIMEOUT: "15"
+          AWSREGION: "us-east-1"
+      Events:
+        RootHandler:
+          Type: Api
+          Properties:
+            Path: '/'
+            Method: POST
+      Handler: build/tmb
+      Runtime: go1.x
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

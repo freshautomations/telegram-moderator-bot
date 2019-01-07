@@ -1,0 +1,11 @@
+# Name of the environment where the function runs
+ENVIRONMENT     = staging
+
+# Timeout value for the Lambda function
+TIMEOUT         = 15
+
+# AWS Region for DynamoDB
+AWSREGION       = us-east-1
+
+# Telegram Bot token received from @BotFather
+TELEGRAMTOKEN   = 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
