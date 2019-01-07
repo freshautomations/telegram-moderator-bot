@@ -3,15 +3,13 @@
 ## Overview
 Telegram Moderator Bot written in Go as an AWS Lambda function (and a stand-alone web service).
 
-Please refer to the [User's Guide](freshautomations/telegram-moderator-bot/blob/master/GUIDE.md)
-for additional information on how to use the bot.
+Please refer to the [User's Guide](GUIDE.md) for additional information on how to use the bot.
 
 ## Setup
 ### Prerequisites
-1. Set up [Go](https://golang.org).
-1. Set up [Terraform](https://terraform.io).
+1. Set up [Go](https://golang.org) and the GOPATH veriable.
 1. Familiarize yourself with [@BotFather](https://core.telegram.org/bots#3-how-do-i-create-a-bot) on Telegram.
-1. Set up AWS credentials for Terraform and GOPATH variable for Go.
+1. Set up [Terraform](https://terraform.io) and AWS credentials, if you want to deploy using Terraform.
 1. Run the below to download and prepare the code:
 ```bash
 cd $GOPATH
@@ -64,8 +62,7 @@ make webhook-info
 
 ## How to use it
 
-Please refer to the [User's Guide](freshautomations/telegram-moderator-bot/blob/master/GUIDE.md)
-for additional information on how to use the bot.
+Please refer to the [User's Guide](GUIDE.md) for additional information on how to use the bot.
 
 ## Environment variables
 ```
