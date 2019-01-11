@@ -13,6 +13,31 @@ import (
 	"strings"
 )
 
+// Available administrator commands help text. X will be replaced with backtick.
+const textHelpAdminCommands = `
+X/promoteX _@username_ - Promote a user to moderator.
+X/demoteX _@username_ - Demote a moderator to user.`
+
+// Available moderator commands help text. X will be replaced with backtick.
+const textHelpModeratorCommands = `
+X/banX _@username_ - Kick and ban a user.
+X/unbanX _@username_ - Unban a user.
+X/listX - List moderators.`
+
+// Composed help text.
+const textHelpMessage = `Hi %s!
+You are a%s.
+
+Available commands:%s%s`
+
+// Template for list-like messages.
+const textListMessage = `%s:
+%s.`
+
+// String-joiner text.
+const textNewlineComma = `,
+`
+
 // MembersType types
 const (
 	regular = iota
@@ -221,12 +246,9 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 
 	chatId := message.Chat.Id
 	messageId := message.MessageId
-	firstName := message.From.FirstName
-	chatTitle := message.Chat.Title
-	userName := message.From.Username
 
 	if defaults.Debug {
-		log.Printf("[debug] Command received %s from %s (%s). Mentions: %s, Text_Mentions: %+v.", command.Command, userName, firstName, strings.Join(command.UserStrings, ";"), command.Users)
+		log.Printf("[debug] Command received %s from %s. Mentions: %s, Text_Mentions: %+v.", command.Command, message.From, strings.Join(command.UserStrings, ";"), command.Users)
 		log.Printf("[debug] Chat ID: %d, Message ID: %d, User ID: %d", chatId, messageId, message.From.Id)
 	}
 
@@ -243,26 +265,34 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 	// Commands for moderators
 	switch command.Command {
 	case "/help":
+		adminCommands := ""
+		privilegeSnippet := " *moderator*"
 		if isAdmin {
-			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Hi %s, welcome to %s! You are an administrator.", firstName, chatTitle))
-			return
+			privilegeSnippet = "n *administrator*"
+			adminCommands = textHelpAdminCommands
 		}
-		telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Hi %s, welcome to %s! You are a moderator.", firstName, chatTitle))
+
+		text := fmt.Sprintf(textHelpMessage,
+			message.From.FirstName,
+			privilegeSnippet,
+			strings.Replace(textHelpModeratorCommands, "X", "`", -1),
+			strings.Replace(adminCommands, "X", "`", -1))
+		telegram.ReplyMessage(ctx, chatId, messageId, text)
 		return
 	case "/ban":
 		list := telegram.BanMember(ctx, chatId, CheckMembers(ctx, chatId, command, regular))
 		if len(list) < 1 {
-			telegram.ReplyMessage(ctx, chatId, messageId, "No members banned.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No users were banned.")
 		} else {
-			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Banned user(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf(textListMessage, "Banned user(s)", strings.Join(list, textNewlineComma)))
 		}
 		return
 	case "/unban":
 		list := telegram.UnbanMember(ctx, chatId, CheckMembers(ctx, chatId, command, kicked))
 		if len(list) < 1 {
-			telegram.ReplyMessage(ctx, chatId, messageId, "No members unbanned.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No users were unbanned.")
 		} else {
-			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Unbanned user(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf(textListMessage, "Unbanned user(s)", strings.Join(list, textNewlineComma)))
 		}
 		return
 	case "/list":
@@ -270,13 +300,13 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 		if len(list) < 1 {
 			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators found.")
 		} else {
-			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Moderators: %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf(textListMessage, "Moderators", strings.Join(list, textNewlineComma)))
 		}
 		return
 	}
 
 	if !isAdmin {
-		log.Printf("[warning] Non-administrator trying administrator command: %s, %s (%s)", command.Command, userName, firstName)
+		log.Printf("[warning] Non-administrator trying administrator command: %s, %s", command.Command, message.From)
 		return
 	}
 
@@ -286,9 +316,9 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 		list, errors := telegram.AddModerator(ctx, chatId, CheckMembers(ctx, chatId, command, regular))
 		log.Printf("List: %+v", list)
 		if len(list) < 1 {
-			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators added.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators were added.")
 		} else {
-			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Added moderator(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf(textListMessage, "Added moderator(s)", strings.Join(list, textNewlineComma)))
 		}
 		if len(errors) > 0 {
 			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Errors: %s.", strings.Join(errors, "; ")))
@@ -297,9 +327,9 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 		list, errors := telegram.RemoveModerator(ctx, chatId, CheckMembers(ctx, chatId, command, moderators))
 		log.Printf("List: %+v", list)
 		if len(list) < 1 {
-			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators removed.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators were removed.")
 		} else {
-			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Removed moderator(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf(textListMessage, "Removed moderator(s)", strings.Join(list, textNewlineComma)))
 		}
 		if len(errors) > 0 {
 			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Errors: %s.", strings.Join(errors, "; ")))

@@ -433,6 +433,7 @@ func ReplyMessage(ctx *context.Context, ChatId int64, ReplyToMessageId int64, Te
 		Text:                Text,
 		ReplyToMessageId:    ReplyToMessageId,
 		DisableNotification: true,
+		ParseMode:           "Markdown",
 	})
 
 	m, err := http.Post(defaults.TelegramAPIBase+ctx.Cfg.TelegramToken+"/sendMessage", defaults.ContentType, bytes.NewBuffer(jsonValue))
@@ -516,7 +517,7 @@ func GetChatMember(ctx *context.Context, ChatId int64, UserId int) (*ChatMember,
 }
 
 // Add moderators to a supergroup.
-func AddModerator(ctx *context.Context, ChatId int64, Users []*User) (list []string, errors []string) {
+func AddModerator(ctx *context.Context, ChatId int64, Users []*User) (result []string, errors []string) {
 	for _, user := range Users {
 		jsonValue, _ := json.Marshal(PromoteChatMemberRequest{
 			ChatId:             ChatId,
@@ -545,7 +546,7 @@ func AddModerator(ctx *context.Context, ChatId int64, Users []*User) (list []str
 		}
 
 		if incoming.Ok {
-			list = append(list, user.String())
+			result = append(result, fmt.Sprintf("[%s](tg://user?id=%d)", user.String(), user.Id))
 		} else {
 			log.Printf("[error] AddModerator response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 			errors = append(errors, fmt.Sprintf("%s (%s %s): %d: %s", user.Username, user.FirstName, user.LastName, incoming.ErrorCode, incoming.Description))
@@ -556,7 +557,7 @@ func AddModerator(ctx *context.Context, ChatId int64, Users []*User) (list []str
 }
 
 // Remove moderators from a supergroup.
-func RemoveModerator(ctx *context.Context, ChatId int64, Users []*User) (list []string, errors []string) {
+func RemoveModerator(ctx *context.Context, ChatId int64, Users []*User) (result []string, errors []string) {
 	for _, user := range Users {
 		jsonValue, _ := json.Marshal(PromoteChatMemberRequest{
 			ChatId:             ChatId,
@@ -585,7 +586,7 @@ func RemoveModerator(ctx *context.Context, ChatId int64, Users []*User) (list []
 		}
 
 		if incoming.Ok {
-			list = append(list, user.String())
+			result = append(result, fmt.Sprintf("[%s](tg://user?id=%d)", user.String(), user.Id))
 		} else {
 			log.Printf("[error] RemoveModerator response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 			errors = append(errors, fmt.Sprintf("%s (%s %s): %d: %s", user.Username, user.FirstName, user.LastName, incoming.ErrorCode, incoming.Description))
@@ -617,7 +618,7 @@ func BanMember(ctx *context.Context, ChatId int64, Users []*User) (result []stri
 		}
 
 		if incoming.Ok {
-			result = append(result, user.String())
+			result = append(result, fmt.Sprintf("[%s](tg://user?id=%d)", user.String(), user.Id))
 		} else {
 			log.Printf("[error] BanMember response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 		}
@@ -648,7 +649,7 @@ func UnbanMember(ctx *context.Context, ChatId int64, Users []*User) (result []st
 		}
 
 		if incoming.Ok {
-			result = append(result, user.String())
+			result = append(result, fmt.Sprintf("[%s](tg://user?id=%d)", user.String(), user.Id))
 		} else {
 			log.Printf("[error] UnbanMember response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 		}
@@ -680,7 +681,7 @@ func ListModerators(ctx *context.Context, ChatId int64) (result []string) {
 		if member.CanPromoteMembers || member.Status != "administrator" {
 			continue
 		}
-		result = append(result, member.User.String())
+		result = append(result, fmt.Sprintf("[%s](tg://user?id=%d)", member.User.String(), member.User.Id))
 	}
 
 	return
