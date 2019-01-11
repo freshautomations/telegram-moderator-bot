@@ -135,10 +135,13 @@ func ParseInput(m *telegram.Message) *CommandData {
 
 // Checks the list of members and compiles a User array out of valid users.
 func CheckMembers(ctx *context.Context, ChatId int64, command *CommandData, MembersType int) []*telegram.User {
+	var ids []int
 	var result []*telegram.User
+
 	for _, user := range command.Users {
-		result = append(result, user)
+		ids = append(ids, user.Id)
 	}
+
 	for _, user := range command.UserStrings {
 		dbUserData, err := db.GetUserData(ctx, user)
 		if err != nil {
@@ -153,15 +156,16 @@ func CheckMembers(ctx *context.Context, ChatId int64, command *CommandData, Memb
 			}
 			continue
 		}
-		userData, err := telegram.GetChatMember(ctx, ChatId, dbUserData.UserID)
+
+		ids = append(ids, dbUserData.UserID)
+	}
+
+	for _, userId := range ids {
+		userData, err := telegram.GetChatMember(ctx, ChatId, userId)
 		if err != nil {
 			if defaults.Debug {
-				log.Printf("[debug] (CheckMembers) Could not get user verification data from Telegram for user %s, %+v", user, err.Error())
+				log.Printf("[debug] (CheckMembers) Could not get user verification data from Telegram for user ID %d, %+v", userId, err.Error())
 			}
-			continue
-		}
-		if userData.User.Username != user {
-			log.Printf("[warning] (CheckMembers) Username changed since last recorded. Not listing as valid user: %s", user)
 			continue
 		}
 
