@@ -58,7 +58,7 @@ func UpdateUserData(ctx *context.Context, User *UserData) (err error) {
 			},
 		},
 		TableName:        aws.String(ctx.DBTableName),
-		UpdateExpression: aws.String("SET #userid = :userid, #name = :name, #ttl = :ttl"),
+		UpdateExpression: aws.String("SET #userid = :userid, #name = :name, #lastseen = :lastseen"),
 	})
 	return
 }
