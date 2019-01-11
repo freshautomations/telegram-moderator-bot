@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/freshautomations/telegram-moderator-bot/context"
-	"github.com/freshautomations/telegram-moderator-bot/defaults"
 	"os"
 	"strconv"
 	"time"
@@ -38,9 +37,9 @@ func UpdateUserData(ctx *context.Context, User *UserData) (err error) {
 	_, err = ctx.DDBSession.UpdateItem(&dynamodb.UpdateItemInput{
 		//		ConditionExpression:         aws.String("attribute_not_exists #userid OR attribute_not_exists #name OR (attribute_exists #userid AND #userid <> :userid) OR (attribute_exists #name AND #name <> :name)"),
 		ExpressionAttributeNames: map[string]*string{
-			"#userid": aws.String("id"),
-			"#name":   aws.String("name"),
-			"#ttl":    aws.String("ttl"),
+			"#userid":   aws.String("id"),
+			"#name":     aws.String("name"),
+			"#lastseen": aws.String("lastseen"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":userid": {
@@ -49,8 +48,8 @@ func UpdateUserData(ctx *context.Context, User *UserData) (err error) {
 			":name": {
 				S: aws.String(User.Name),
 			},
-			":ttl": {
-				N: aws.String(strconv.FormatInt(time.Now().Add(defaults.TTL).Unix(), 10)),
+			":lastseen": {
+				N: aws.String(strconv.FormatInt(time.Now().Unix(), 10)),
 			},
 		},
 		Key: map[string]*dynamodb.AttributeValue{

@@ -136,19 +136,14 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
 }
 
 resource aws_dynamodb_table tmb {
-  name = "tmb-${var.ENVIRONMENT}-users"
-  hash_key = "username"
-  read_capacity = 5
+  name           = "tmb-${var.ENVIRONMENT}-users"
+  hash_key       = "username"
+  read_capacity  = 5
   write_capacity = 5
+
   attribute {
     name = "username"
     type = "S"
-  }
-  ttl {
-    //TTL disabled because we can't lose moderator user IDs if they don't send messages for a while.
-    //Todo: open an issue
-    enabled = false
-    attribute_name = "ttl"
   }
 }
 
