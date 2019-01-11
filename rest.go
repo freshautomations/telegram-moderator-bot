@@ -30,6 +30,53 @@ type CommandData struct {
 	UserStrings []string
 }
 
+// Filters incoming messages and updates internal database with user IDs. Filters out bots.
+func PreprocessMessage(ctx *context.Context, incoming *telegram.Update) (message *telegram.Message) {
+	var from *telegram.User = nil
+
+	switch {
+	case incoming.Message != nil:
+		message = incoming.Message
+		from = message.From
+	case incoming.EditedMessage != nil:
+		message = incoming.EditedMessage
+		from = message.From
+	case incoming.ChannelPost != nil:
+		from = incoming.ChannelPost.From
+	case incoming.EditedChannelPost != nil:
+		from = incoming.EditedChannelPost.From
+	case incoming.InlineQuery != nil:
+		from = incoming.InlineQuery.From
+	case incoming.ChosenInlineResult.From != nil:
+		from = incoming.ChosenInlineResult.From
+	case incoming.CallbackQuery != nil:
+		from = incoming.CallbackQuery.From
+	case incoming.PreCheckoutQuery != nil:
+		from = incoming.PreCheckoutQuery.From
+	case incoming.ShippingQuery != nil:
+		from = incoming.ShippingQuery.From
+	default:
+		return
+	}
+
+	if from.IsBot {
+		return
+	}
+
+	name := from.FirstName
+	if from.LastName != "" {
+		name = name + " " + from.LastName
+	}
+
+	err := db.UpdateUserData(ctx, &db.UserData{from.Username, from.Id, name})
+	if err != nil {
+		//Todo: handle DynamoDB capacity limitations
+		log.Printf("[tempdebug] error updating user in DB: %+v", err.Error())
+	}
+
+	return
+}
+
 // Parse the incoming message for bot command and a list of users.
 func ParseInput(m *telegram.Message) *CommandData {
 	output := &CommandData{}
@@ -132,53 +179,6 @@ func CheckMembers(ctx *context.Context, ChatId int64, command *CommandData, Memb
 		result = append(result, userData.User)
 	}
 	return result
-}
-
-// Filters incoming messages and updates internal database with user IDs. Filters out bots.
-func PreprocessMessage(ctx *context.Context, incoming *telegram.Update) (message *telegram.Message) {
-	var from *telegram.User = nil
-
-	switch {
-	case incoming.Message != nil:
-		message = incoming.Message
-		from = message.From
-	case incoming.EditedMessage != nil:
-		message = incoming.EditedMessage
-		from = message.From
-	case incoming.ChannelPost != nil:
-		from = incoming.ChannelPost.From
-	case incoming.EditedChannelPost != nil:
-		from = incoming.EditedChannelPost.From
-	case incoming.InlineQuery != nil:
-		from = incoming.InlineQuery.From
-	case incoming.ChosenInlineResult.From != nil:
-		from = incoming.ChosenInlineResult.From
-	case incoming.CallbackQuery != nil:
-		from = incoming.CallbackQuery.From
-	case incoming.PreCheckoutQuery != nil:
-		from = incoming.PreCheckoutQuery.From
-	case incoming.ShippingQuery != nil:
-		from = incoming.ShippingQuery.From
-	default:
-		return
-	}
-
-	if from.IsBot {
-		return
-	}
-
-	name := from.FirstName
-	if from.LastName != "" {
-		name = name + " " + from.LastName
-	}
-
-	err := db.UpdateUserData(ctx, &db.UserData{from.Username, from.Id, name})
-	if err != nil {
-		//Todo: handle DynamoDB capacity limitations
-		log.Printf("[tempdebug] error updating user in DB: %+v", err.Error())
-	}
-
-	return
 }
 
 // MainHandler handles the requests coming to `/`.
