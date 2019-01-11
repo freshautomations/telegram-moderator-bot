@@ -20,6 +20,17 @@ type User struct {
 	LanguageCode string `json:"language_code"`
 }
 
+func (u User) String() string {
+	name := u.FirstName
+	if u.LastName != "" {
+		name = fmt.Sprintf("%s %s", name, u.LastName)
+	}
+	if u.Username != "" {
+		return fmt.Sprintf("%s (%s)", name, u.Username)
+	}
+	return name
+}
+
 type Chat struct {
 	Id                          int64      `json:"id"`
 	Type                        string     `json:"type"`
@@ -534,7 +545,7 @@ func AddModerator(ctx *context.Context, ChatId int64, Users []*User) (list []str
 		}
 
 		if incoming.Ok {
-			list = append(list, fmt.Sprintf("%s (%s %s)", user.Username, user.FirstName, user.LastName))
+			list = append(list, user.String())
 		} else {
 			log.Printf("[error] AddModerator response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 			errors = append(errors, fmt.Sprintf("%s (%s %s): %d: %s", user.Username, user.FirstName, user.LastName, incoming.ErrorCode, incoming.Description))
@@ -574,7 +585,7 @@ func RemoveModerator(ctx *context.Context, ChatId int64, Users []*User) (list []
 		}
 
 		if incoming.Ok {
-			list = append(list, fmt.Sprintf("%s (%s %s)", user.Username, user.FirstName, user.LastName))
+			list = append(list, user.String())
 		} else {
 			log.Printf("[error] RemoveModerator response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 			errors = append(errors, fmt.Sprintf("%s (%s %s): %d: %s", user.Username, user.FirstName, user.LastName, incoming.ErrorCode, incoming.Description))
@@ -606,7 +617,7 @@ func BanMember(ctx *context.Context, ChatId int64, Users []*User) (result []stri
 		}
 
 		if incoming.Ok {
-			result = append(result, fmt.Sprintf("%s (%s %s)", user.Username, user.FirstName, user.LastName))
+			result = append(result, user.String())
 		} else {
 			log.Printf("[error] BanMember response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 		}
@@ -637,7 +648,7 @@ func UnbanMember(ctx *context.Context, ChatId int64, Users []*User) (result []st
 		}
 
 		if incoming.Ok {
-			result = append(result, fmt.Sprintf("%s (%s %s)", user.Username, user.FirstName, user.LastName))
+			result = append(result, user.String())
 		} else {
 			log.Printf("[error] UnbanMember response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 		}
@@ -669,7 +680,7 @@ func ListModerators(ctx *context.Context, ChatId int64) (result []string) {
 		if member.CanPromoteMembers || member.Status != "administrator" {
 			continue
 		}
-		result = append(result, fmt.Sprintf("%s (%s %s)", member.User.Username, member.User.FirstName, member.User.LastName))
+		result = append(result, member.User.String())
 	}
 
 	return
