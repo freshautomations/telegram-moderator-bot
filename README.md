@@ -66,7 +66,7 @@ Please refer to the [User's Guide](GUIDE.md) for additional information on how t
 
 ## Environment variables
 ```
-BUILD_NUMBER = 0-dev
+BUILD_NUMBER = 0
 ```
 Required for build.
 
