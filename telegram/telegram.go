@@ -426,8 +426,8 @@ type KickChatMemberResponse struct {
 	Description string `json:"description,omitempty"`
 }
 
-// Sends a message to a supergroup that responds to a message.
-func SendMessage(ctx *context.Context, ChatId int64, ReplyToMessageId int64, Text string) error {
+// Reply to a user's message in a supergroup.
+func ReplyMessage(ctx *context.Context, ChatId int64, ReplyToMessageId int64, Text string) error {
 	jsonValue, _ := json.Marshal(SendMessageRequest{
 		ChatId:              ChatId,
 		Text:                Text,
@@ -444,16 +444,16 @@ func SendMessage(ctx *context.Context, ChatId int64, ReplyToMessageId int64, Tex
 	incoming := &SendMessageResponse{}
 	err = json.NewDecoder(m.Body).Decode(incoming)
 	if err != nil {
-		log.Printf("[error] SendMessage decoder: %v", err)
+		log.Printf("[error] ReplyMessage decoder: %v", err)
 		return err
 	}
 
 	if incoming.Ok {
 		if defaults.Debug {
-			log.Printf("[debug] SendMessage: %s", incoming.Result.Text)
+			log.Printf("[debug] ReplyMessage: %s", incoming.Result.Text)
 		}
 	} else {
-		log.Printf("[error] SendMessage %d %s.", incoming.ErrorCode, incoming.Description)
+		log.Printf("[error] ReplyMessage %d %s.", incoming.ErrorCode, incoming.Description)
 		return errors.New(incoming.Description)
 	}
 

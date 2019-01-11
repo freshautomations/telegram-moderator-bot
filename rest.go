@@ -232,7 +232,7 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 
 	isAdmin, isMod, getPrivilegesError := telegram.GetPrivileges(ctx, chatId, message.From.Id)
 	if getPrivilegesError != nil {
-		telegram.SendMessage(ctx, chatId, messageId, "Could not check user privileges.")
+		telegram.ReplyMessage(ctx, chatId, messageId, "Could not check user privileges.")
 		return status, getPrivilegesError
 	}
 
@@ -242,35 +242,35 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 
 	// Commands for moderators
 	switch command.Command {
-	case "/hello":
+	case "/help":
 		if isAdmin {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Hi %s, welcome to %s! You are an administrator.", firstName, chatTitle))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Hi %s, welcome to %s! You are an administrator.", firstName, chatTitle))
 			return
 		}
-		telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Hi %s, welcome to %s! You are a moderator.", firstName, chatTitle))
+		telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Hi %s, welcome to %s! You are a moderator.", firstName, chatTitle))
 		return
 	case "/ban":
 		list := telegram.BanMember(ctx, chatId, CheckMembers(ctx, chatId, command, regular))
 		if len(list) < 1 {
-			telegram.SendMessage(ctx, chatId, messageId, "No members banned.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No members banned.")
 		} else {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Banned user(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Banned user(s) %s.", strings.Join(list, ",")))
 		}
 		return
 	case "/unban":
 		list := telegram.UnbanMember(ctx, chatId, CheckMembers(ctx, chatId, command, kicked))
 		if len(list) < 1 {
-			telegram.SendMessage(ctx, chatId, messageId, "No members unbanned.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No members unbanned.")
 		} else {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Unbanned user(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Unbanned user(s) %s.", strings.Join(list, ",")))
 		}
 		return
 	case "/list":
 		list := telegram.ListModerators(ctx, chatId)
 		if len(list) < 1 {
-			telegram.SendMessage(ctx, chatId, messageId, "No moderators found.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators found.")
 		} else {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Moderators: %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Moderators: %s.", strings.Join(list, ",")))
 		}
 		return
 	}
@@ -286,23 +286,23 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 		list, errors := telegram.AddModerator(ctx, chatId, CheckMembers(ctx, chatId, command, regular))
 		log.Printf("List: %+v", list)
 		if len(list) < 1 {
-			telegram.SendMessage(ctx, chatId, messageId, "No moderators added.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators added.")
 		} else {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Added moderator(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Added moderator(s) %s.", strings.Join(list, ",")))
 		}
 		if len(errors) > 0 {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Errors: %s.", strings.Join(errors, "; ")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Errors: %s.", strings.Join(errors, "; ")))
 		}
 	case "/demote":
 		list, errors := telegram.RemoveModerator(ctx, chatId, CheckMembers(ctx, chatId, command, moderators))
 		log.Printf("List: %+v", list)
 		if len(list) < 1 {
-			telegram.SendMessage(ctx, chatId, messageId, "No moderators removed.")
+			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators removed.")
 		} else {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Removed moderator(s) %s.", strings.Join(list, ",")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Removed moderator(s) %s.", strings.Join(list, ",")))
 		}
 		if len(errors) > 0 {
-			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Errors: %s.", strings.Join(errors, "; ")))
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf("Errors: %s.", strings.Join(errors, "; ")))
 		}
 	}
 
