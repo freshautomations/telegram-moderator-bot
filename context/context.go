@@ -17,7 +17,9 @@ type Context struct {
 
 	DDBSession *dynamodb.DynamoDB
 
-	DBTableName string
+	DBUserTable string
+
+	DBWarnTable string
 
 	// Application configuration
 	Cfg *config.Config

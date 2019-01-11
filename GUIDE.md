@@ -17,9 +17,11 @@ and **pin a message** using the built-in GUI functionality. No other usual admin
 (or encouraged) for moderators. It is explicitly forbidden to give a moderator the
 "Ban users" and "Add new Admins" privileges. These privileges would allow them to have power over other moderators.
 
-Above the mentioned administrative privileges, moderators can issue the `/ban @username` command to the Telegram Bot
-to ban a regular member of the supergroup. Moderators can unban users using the GUI interface or the `/unban @username` command.
+Apart from the mentioned administrative privileges, moderators can issue the `/ban @username` command to the Telegram Bot
+to ban a regular member of the supergroup. Moderators can unban users using the `/unban @username` command.
 (The user has to rejoin the group after unbanning.)
+
+Moderators can write up a user with the `/warn @username` command. After two warnings the user gets banned.
 
 ## (Full) Administrators
 Administrators have more privileges than moderators. For the Telegram bot, any administrator with the "Add new Admins"
@@ -45,6 +47,13 @@ A nice welcome message. It only works if you're a moderator or administrator so 
 Lists moderators.
 
 ```
+/warn @username
+```
+Issues a warning for the user. After two warnings the bot bans the user.
+
+Multiple names can be added using space as a separator.
+
+```
 /ban @username
 ```
 Ban a user. Use the GUI to quickly pinpoint the user and fill in the right username.
@@ -55,8 +64,8 @@ Multiple names can be added using space as a separator.
 ```
 /unban @username
 ```
-Removes the user from the banned list. Does not add the user back in the supergroup.
-(This can be achieved on the GUI too, this is only for convenience.)
+Removes the user from the banned list and resets its warning counter.
+Does not add the user back in the supergroup.
 
 Multiple names can be added using space as a separator.
 

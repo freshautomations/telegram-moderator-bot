@@ -22,6 +22,7 @@ X/demoteX _@username_ - Demote a moderator to user.`
 const textHelpModeratorCommands = `
 X/banX _@username_ - Kick and ban a user.
 X/unbanX _@username_ - Unban a user.
+X/warnX _@username_ - Warn a user.
 X/listX - List moderators.`
 
 // Composed help text.
@@ -173,6 +174,10 @@ func CheckMembers(ctx *context.Context, ChatId int64, command *CommandData, Memb
 			continue
 		}
 
+		if defaults.Debug {
+			log.Printf("[debug] CheckMembers ChatMember %+v.", userData)
+		}
+
 		if MembersType == regular {
 			if userData.Status != "member" {
 				continue
@@ -207,6 +212,10 @@ func CheckMembers(ctx *context.Context, ChatId int64, command *CommandData, Memb
 			if (userData.Status != "administrator" || !userData.CanPromoteMembers) && userData.Status != "creator" {
 				continue
 			}
+		}
+
+		if defaults.Debug {
+			log.Printf("[debug] CheckMembers Keeping ChatMember %+v.", userData)
 		}
 
 		result = append(result, userData.User)
@@ -283,6 +292,18 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 			strings.Replace(adminCommands, "X", "`", -1))
 		telegram.ReplyMessage(ctx, chatId, messageId, text)
 		return
+	case "/warn":
+		warned, banned := telegram.WarnMember(ctx, chatId, CheckMembers(ctx, chatId, command, regular))
+		if len(warned) >= 1 {
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf(textListMessage, "Warned user(s)", strings.Join(warned, textNewlineComma)))
+		}
+		if len(banned) >= 1 {
+			telegram.ReplyMessage(ctx, chatId, messageId, fmt.Sprintf(textListMessage, "Banned user(s)", strings.Join(banned, textNewlineComma)))
+		}
+		if len(warned) < 1 && len(banned) < 1 {
+			telegram.ReplyMessage(ctx, chatId, messageId, "No users were warned.")
+		}
+		return
 	case "/ban":
 		list := telegram.BanMember(ctx, chatId, CheckMembers(ctx, chatId, command, regular))
 		if len(list) < 1 {
@@ -318,7 +339,6 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 	switch command.Command {
 	case "/promote":
 		list, errors := telegram.AddModerator(ctx, chatId, CheckMembers(ctx, chatId, command, regular))
-		log.Printf("List: %+v", list)
 		if len(list) < 1 {
 			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators were added.")
 		} else {
@@ -329,7 +349,6 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 		}
 	case "/demote":
 		list, errors := telegram.RemoveModerator(ctx, chatId, CheckMembers(ctx, chatId, command, moderators))
-		log.Printf("List: %+v", list)
 		if len(list) < 1 {
 			telegram.ReplyMessage(ctx, chatId, messageId, "No moderators were removed.")
 		} else {

@@ -30,7 +30,8 @@ func Initialize(ctx *context.Context) {
 	}
 	ctx.AWSSession = session.Must(session.NewSessionWithOptions(session.Options{Config: awscfg}))
 	ctx.DDBSession = dynamodb.New(ctx.AWSSession)
-	ctx.DBTableName = "tmb-" + ctx.Cfg.Environment + "-users"
+	ctx.DBUserTable = "tmb-" + ctx.Cfg.Environment + "-users"
+	ctx.DBWarnTable = "tmb-" + ctx.Cfg.Environment + "-warns"
 }
 
 func UpdateUserData(ctx *context.Context, User *UserData) (err error) {
@@ -57,7 +58,7 @@ func UpdateUserData(ctx *context.Context, User *UserData) (err error) {
 				S: aws.String(User.Username),
 			},
 		},
-		TableName:        aws.String(ctx.DBTableName),
+		TableName:        aws.String(ctx.DBUserTable),
 		UpdateExpression: aws.String("SET #userid = :userid, #name = :name, #lastseen = :lastseen"),
 	})
 	return
@@ -77,7 +78,7 @@ func GetUserData(ctx *context.Context, username string) (*UserData, error) {
 			"#name":     aws.String("name"),
 		},
 		ProjectionExpression: aws.String("#username, #userid, #name"),
-		TableName:            aws.String(ctx.DBTableName),
+		TableName:            aws.String(ctx.DBUserTable),
 	})
 	if err != nil {
 		return nil, err
@@ -87,9 +88,62 @@ func GetUserData(ctx *context.Context, username string) (*UserData, error) {
 
 	err = dynamodbattribute.UnmarshalMap(result.Item, &output)
 
-	if output.UserID == 0 {
+	if output.UserID == 0 || err != nil {
 		return nil, err
 	}
 
 	return &output, err
+}
+
+func AddWarnToUser(ctx *context.Context, userId int) (int, error) {
+	result, err := ctx.DDBSession.UpdateItem(&dynamodb.UpdateItemInput{
+		ExpressionAttributeNames: map[string]*string{
+			"#warn": aws.String("warn"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":warn": {
+				N: aws.String("1"),
+			},
+		},
+		Key: map[string]*dynamodb.AttributeValue{
+			"id": {
+				N: aws.String(strconv.Itoa(userId)),
+			},
+		},
+		TableName:        aws.String(ctx.DBWarnTable),
+		UpdateExpression: aws.String("ADD #warn :warn"),
+		ReturnValues:     aws.String("UPDATED_NEW"),
+	})
+	if err != nil {
+		return -1, err
+	}
+
+	output := struct {
+		Warn int `json:"warn"`
+	}{-1}
+
+	err = dynamodbattribute.UnmarshalMap(result.Attributes, &output)
+	return output.Warn, err
+}
+
+func ResetUserWarn(ctx *context.Context, userId int) error {
+	_, err := ctx.DDBSession.UpdateItem(&dynamodb.UpdateItemInput{
+		ExpressionAttributeNames: map[string]*string{
+			"#warn": aws.String("warn"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":warn": {
+				N: aws.String("0"),
+			},
+		},
+		Key: map[string]*dynamodb.AttributeValue{
+			"id": {
+				N: aws.String(strconv.Itoa(userId)),
+			},
+		},
+		TableName:        aws.String(ctx.DBWarnTable),
+		UpdateExpression: aws.String("SET #warn = :warn"),
+		ReturnValues:     aws.String("UPDATED_NEW"),
+	})
+	return err
 }

@@ -2,10 +2,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-#terraform {
-#  backend "s3" {}
-#}
-
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "tmb" {
@@ -47,7 +43,10 @@ resource "aws_iam_policy" "tmb" {
     },
     {
       "Action": "dynamodb:*",
-      "Resource": "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/tmb-${var.ENVIRONMENT}-users",
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/tmb-${var.ENVIRONMENT}-users",
+        "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/tmb-${var.ENVIRONMENT}-warns"
+      ],
       "Effect": "Allow"
     },
     {
@@ -135,7 +134,7 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = "${aws_iam_policy.tmb.arn}"
 }
 
-resource aws_dynamodb_table tmb {
+resource aws_dynamodb_table tmb-users {
   name           = "tmb-${var.ENVIRONMENT}-users"
   hash_key       = "username"
   read_capacity  = 5
@@ -144,6 +143,18 @@ resource aws_dynamodb_table tmb {
   attribute {
     name = "username"
     type = "S"
+  }
+}
+
+resource aws_dynamodb_table tmb-warns {
+  name           = "tmb-${var.ENVIRONMENT}-warns"
+  hash_key       = "id"
+  read_capacity  = 5
+  write_capacity = 5
+
+  attribute {
+    name = "id"
+    type = "N"
   }
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/freshautomations/telegram-moderator-bot/context"
+	"github.com/freshautomations/telegram-moderator-bot/db"
 	"github.com/freshautomations/telegram-moderator-bot/defaults"
 	"log"
 	"net/http"
@@ -596,7 +597,7 @@ func RemoveModerator(ctx *context.Context, ChatId int64, Users []*User) (result 
 	return
 }
 
-// Ban regular members of a supergroup.
+// Ban members of a supergroup.
 func BanMember(ctx *context.Context, ChatId int64, Users []*User) (result []string) {
 	for _, user := range Users {
 		jsonValue, _ := json.Marshal(KickChatMemberRequest{
@@ -627,7 +628,7 @@ func BanMember(ctx *context.Context, ChatId int64, Users []*User) (result []stri
 	return
 }
 
-// Unban regular members from a supergroup..
+// Unban members from a supergroup..
 func UnbanMember(ctx *context.Context, ChatId int64, Users []*User) (result []string) {
 	for _, user := range Users {
 		jsonValue, _ := json.Marshal(KickChatMemberRequest{
@@ -650,11 +651,33 @@ func UnbanMember(ctx *context.Context, ChatId int64, Users []*User) (result []st
 
 		if incoming.Ok {
 			result = append(result, fmt.Sprintf("[%s](tg://user?id=%d)", user.String(), user.Id))
+			_ = db.ResetUserWarn(ctx, user.Id)
 		} else {
 			log.Printf("[error] UnbanMember response: %d, %s, %+v", incoming.ErrorCode, incoming.Description, user)
 		}
 	}
 
+	return
+}
+
+// Warn members of a supergroup.
+func WarnMember(ctx *context.Context, ChatId int64, Users []*User) (warned, banned []string) {
+	var BanMembers []*User
+	for _, user := range Users {
+		warn, err := db.AddWarnToUser(ctx, user.Id)
+		if err != nil {
+			if defaults.Debug {
+				log.Printf("[debug] [error] WarnMember AddWarnToUser error %+v", err.Error())
+			}
+			continue
+		}
+		if warn >= defaults.WarnLimit {
+			BanMembers = append(BanMembers, user)
+		} else {
+			warned = append(warned, fmt.Sprintf("[%s](tg://user?id=%d)", user.String(), user.Id))
+		}
+	}
+	banned = BanMember(ctx, ChatId, BanMembers)
 	return
 }
 
