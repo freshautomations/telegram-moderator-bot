@@ -85,6 +85,10 @@ func ParseInput(m *telegram.Message) *CommandData {
 		return nil
 	}
 
+	if m.Text[0] != '/' {
+		return nil
+	}
+
 	if m.Entities[0].Type != "bot_command" {
 		return nil
 	} else {
@@ -300,8 +304,6 @@ func MainHandler(ctx *context.Context, w http.ResponseWriter, r *http.Request) (
 		if len(errors) > 0 {
 			telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Errors: %s.", strings.Join(errors, "; ")))
 		}
-	default:
-		telegram.SendMessage(ctx, chatId, messageId, fmt.Sprintf("Sorry %s, I didn't get that. Try saying '/hello'.", firstName))
 	}
 
 	return
